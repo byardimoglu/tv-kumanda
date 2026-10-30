@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TV Kumanda">
+<meta name="theme-color" content="#0b0d12">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>TV Kumanda</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b0d12; overflow: hidden; overscroll-behavior: none; }
+  iframe {
+    position: fixed; border: 0;
+    top: env(safe-area-inset-top); bottom: env(safe-area-inset-bottom);
+    left: env(safe-area-inset-left); right: env(safe-area-inset-right);
+    width: calc(100% - env(safe-area-inset-left) - env(safe-area-inset-right));
+    height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+</style>
+</head>
+<body>
+<script>
+// Kabuk sayfa: ayarları saklar, açma sinyalini sunucuya iletir.
+// Kumanda korumalı çerçevede çalışır çünkü LG TV yalnız "null" kaynaklı bağlantıları kabul ediyor.
+"use strict";
+const PREFIX = "tvk.";
+const frameWin = () => document.getElementById("app").contentWindow;
+addEventListener("message", (e) => {
+  if (e.source !== frameWin()) return;
+  const d = e.data || {};
+  if (d.tvkHello) {
+    const init = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k.startsWith(PREFIX)) init[k] = localStorage.getItem(k);
+    }
+    frameWin().postMessage({ tvkInit: init }, "*");
+  } else if (d.tvkSet && String(d.tvkSet[0]).startsWith(PREFIX)) {
+    localStorage.setItem(d.tvkSet[0], d.tvkSet[1]);
+  } else if (d.tvkRemove && String(d.tvkRemove).startsWith(PREFIX)) {
+    localStorage.removeItem(d.tvkRemove);
+  } else if (d.tvkWol) {
+    const reply = (ok) => frameWin().postMessage({ tvkWolResult: true, id: d.id, ok }, "*");
+    fetch("wol", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mac: d.tvkWol }) })
+      .then((r) => reply(r.ok)).catch(() => reply(false));
+  }
+});
+</script>
+<iframe id="app" src="remote.html" sandbox="allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox" title="TV Kumanda"></iframe>
+</body>
+</html>

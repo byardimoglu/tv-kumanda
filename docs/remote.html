@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TV Kumanda">
+<meta name="theme-color" content="#0b0d12">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>TV Kumanda</title>
+<style>
+:root {
+  --bg: #0b0d12; --s1: #141821; --s2: #1d2230; --s3: #293043;
+  --tx: #e9ecf3; --mu: #8b93a7; --ac: #4f8cff; --red: #e5484d; --ok: #30a46c; --warn: #f5a524;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; background: var(--bg); color: var(--tx);
+  font: 15px/1.35 -apple-system, system-ui, "Segoe UI", sans-serif;
+  overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+body { display: flex; flex-direction: column; height: 100dvh; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input { font: inherit; -webkit-user-select: text; user-select: text; }
+svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+svg.f { fill: currentColor; stroke: none; }
+
+header {
+  padding: calc(env(safe-area-inset-top) + 6px) 16px 6px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.status { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.status b { font-size: 17px; }
+.status small { color: var(--mu); font-size: 12px; display: block; }
+#dot { width: 10px; height: 10px; border-radius: 50%; background: var(--red); flex: none; }
+#dot.on { background: var(--ok); }
+#dot.wait { background: var(--warn); animation: pulse 1s infinite alternate; }
+@keyframes pulse { to { opacity: .35; } }
+.icon-btn { background: var(--s2); border: 0; border-radius: 12px; width: 40px; height: 40px; display: grid; place-items: center; }
+
+main { flex: 1; position: relative; overflow: hidden; }
+.tab { position: absolute; inset: 0; overflow-y: auto; padding: 6px 16px 18px; display: none; }
+.tab.active { display: block; }
+.col { width: 100%; max-width: 420px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+
+nav {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding: 4px 4px calc(env(safe-area-inset-bottom) + 2px);
+  background: var(--s1); border-top: 1px solid var(--s3);
+}
+nav button { background: none; border: 0; color: var(--mu); font-size: 11px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 7px 0; }
+nav button.active { color: var(--ac); }
+
+.key {
+  background: var(--s2); border: 0; border-radius: 16px; min-height: 56px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  touch-action: manipulation; transition: transform .06s, background .06s;
+}
+.key.pressed { transform: scale(.93); background: var(--s3); }
+.row { display: flex; gap: 12px; width: 100%; }
+.row > .key { flex: 1; }
+.round { width: 64px; height: 64px; min-height: 64px; border-radius: 50%; flex-direction: column; gap: 2px; font-size: 10px; color: var(--mu); }
+.round svg { color: var(--tx); }
+.spread { justify-content: space-between; }
+.power { color: var(--red); }
+.power svg { color: var(--red); }
+.lbl { font-size: 12px; color: var(--mu); }
+
+.dpad {
+  width: min(76vw, 270px); aspect-ratio: 1; border-radius: 50%; background: var(--s2);
+  display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+}
+.dpad .key { background: transparent; border-radius: 50%; min-height: 0; }
+.dpad .key.pressed { background: rgba(255,255,255,.07); }
+.dpad .ok { grid-area: 2 / 2; background: var(--ac); color: #fff; margin: 4px; font-weight: 600; font-size: 17px; }
+.dpad .ok.pressed { background: #3d74de; }
+.dpad .up { grid-area: 1 / 2; } .dpad .left { grid-area: 2 / 1; } .dpad .right { grid-area: 2 / 3; } .dpad .down { grid-area: 3 / 2; }
+.dpad svg { width: 30px; height: 30px; }
+
+.rockers { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.rocker { display: flex; flex-direction: column; align-items: stretch; background: var(--s2); border-radius: 30px; width: 74px; overflow: hidden; }
+.rocker .key { background: transparent; border-radius: 0; min-height: 62px; }
+.rocker .key.pressed { background: var(--s3); }
+.rocker .lbl { text-align: center; padding: 2px 0; }
+.media { display: grid; grid-template-columns: repeat(2, 62px); gap: 10px; }
+.media .key { min-height: 56px; }
+.colors { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; width: 100%; }
+.colors .key { min-height: 34px; border-radius: 10px; }
+.c-red { background: #8f2a2e; } .c-green { background: #23704b; } .c-yellow { background: #8a7420; } .c-blue { background: #2a4f9a; }
+
+#pad {
+  flex: 1; width: 100%; min-height: 340px; border-radius: 22px; background: var(--s1);
+  border: 1px solid var(--s3); touch-action: none; position: relative; overflow: hidden;
+  background-image: radial-gradient(var(--s3) 1px, transparent 1px); background-size: 22px 22px;
+  display: grid; place-items: center; text-align: center; color: var(--mu); font-size: 13px;
+}
+#pad.touch { border-color: var(--ac); }
+#pad .hint { padding: 0 24px; pointer-events: none; line-height: 1.6; }
+#tab-mouse .col { height: 100%; }
+.slider { display: flex; align-items: center; gap: 12px; width: 100%; color: var(--mu); font-size: 13px; }
+.slider input { flex: 1; accent-color: var(--ac); }
+
+.field {
+  width: 100%; background: var(--s1); border: 1px solid var(--s3); border-radius: 14px;
+  color: var(--tx); padding: 14px 16px; font-size: 18px; outline: none;
+}
+.field:focus { border-color: var(--ac); }
+.note { color: var(--mu); font-size: 13px; text-align: center; margin: 0; }
+
+.numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+.numpad .key { min-height: 66px; font-size: 26px; font-weight: 500; }
+.numpad .ok { background: var(--ac); color: #fff; font-size: 17px; }
+
+h3 { margin: 6px 0 0; font-size: 13px; color: var(--mu); font-weight: 600; width: 100%; text-transform: uppercase; letter-spacing: .04em; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; }
+.chip { background: var(--s2); border: 0; border-radius: 999px; padding: 10px 16px; font-size: 14px; }
+.chip.dim { color: var(--mu); }
+.apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px; width: 100%; }
+.app { background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--tx); padding: 0; }
+.app img, .app .ph { width: 60px; height: 60px; border-radius: 14px; background: var(--s2); object-fit: cover; }
+.app span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-align: center; line-height: 1.25; }
+.app:active img { transform: scale(.93); }
+.wide { width: 100%; }
+.danger { color: var(--red); }
+
+#banner {
+  position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 56px); z-index: 20;
+  background: var(--s3); border-radius: 14px; padding: 12px 14px; font-size: 14px;
+  display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.45);
+}
+#banner[hidden] { display: none; }
+#banner span { flex: 1; }
+#banner button { background: var(--ac); border: 0; color: #fff; border-radius: 10px; padding: 8px 12px; font-size: 13px; white-space: nowrap; }
+
+dialog {
+  background: var(--s1); color: var(--tx); border: 1px solid var(--s3); border-radius: 18px;
+  width: min(92vw, 400px); padding: 18px;
+}
+dialog::backdrop { background: rgba(0,0,0,.6); }
+dialog h2 { margin: 0 0 12px; font-size: 18px; }
+dialog label { display: block; color: var(--mu); font-size: 13px; margin: 12px 0 6px; }
+dialog .row { margin-top: 16px; }
+dialog .key { min-height: 46px; font-size: 15px; }
+.primary { background: var(--ac) !important; color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="status">
+    <span id="dot" class="wait"></span>
+    <div><b>TV Kumanda</b><small id="statusText">Bağlanıyor…</small></div>
+  </div>
+  <button class="icon-btn" id="btnSettings" aria-label="Ayarlar">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+  </button>
+</header>
+
+<div id="banner" hidden><span id="bannerText"></span><button id="bannerBtn" hidden></button></div>
+
+<main>
+  <!-- KUMANDA -->
+  <section class="tab" id="tab-remote">
+    <div class="col">
+      <div class="row spread">
+        <button class="key round power" data-act="power"><svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 7.3a8 8 0 1 0 11.4 0"/></svg>Güç</button>
+        <button class="key round" data-btn="INPUT_HUB"><svg viewBox="0 0 24 24"><path d="M3 12h10M9 8l4 4-4 4"/><rect x="15" y="4" width="6" height="16" rx="2"/></svg>Kaynak</button>
+        <button class="key round" data-btn="MENU"><svg viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>Ayarlar</button>
+        <button class="key round" data-btn="MUTE"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>Sessiz</button>
+      </div>
+
+      <div class="dpad">
+        <button class="key up" data-btn="UP" data-repeat aria-label="Yukarı"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button>
+        <button class="key left" data-btn="LEFT" data-repeat aria-label="Sol"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+        <button class="key ok" data-btn="ENTER">Tamam</button>
+        <button class="key right" data-btn="RIGHT" data-repeat aria-label="Sağ"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+        <button class="key down" data-btn="DOWN" data-repeat aria-label="Aşağı"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+      </div>
+
+      <div class="row">
+        <button class="key" data-btn="BACK"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>Geri</button>
+        <button class="key" data-btn="HOME"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>Ana sayfa</button>
+        <button class="key" data-btn="EXIT"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>Çıkış</button>
+      </div>
+
+      <div class="rockers">
+        <div class="rocker">
+          <button class="key" data-btn="VOLUMEUP" data-repeat aria-label="Ses aç"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
+          <div class="lbl">Ses <span id="vol"></span></div>
+          <button class="key" data-btn="VOLUMEDOWN" data-repeat aria-label="Ses kıs"><svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg></button>
+        </div>
+        <div class="media">
+          <button class="key" data-btn="REWIND" aria-label="Geri sar"><svg class="f" viewBox="0 0 24 24"><path d="M11 6 4 12l7 6zM20 6l-7 6 7 6z"/></svg></button>
+          <button class="key" data-btn="FASTFORWARD" aria-label="İleri sar"><svg class="f" viewBox="0 0 24 24"><path d="M4 6l7 6-7 6zM13 6l7 6-7 6z"/></svg></button>
+          <button class="key" data-btn="PLAY" aria-label="Oynat"><svg class="f" viewBox="0 0 24 24"><path d="M7 5v14l12-7z"/></svg></button>
+          <button class="key" data-btn="PAUSE" aria-label="Duraklat"><svg class="f" viewBox="0 0 24 24"><path d="M7 5h3v14H7zM14 5h3v14h-3z"/></svg></button>
+        </div>
+        <div class="rocker">
+          <button class="key" data-btn="CHANNELUP" data-repeat aria-label="Kanal yukarı"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button>
+          <div class="lbl">Kanal</div>
+          <button class="key" data-btn="CHANNELDOWN" data-repeat aria-label="Kanal aşağı"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        </div>
+      </div>
+
+      <div class="colors">
+        <button class="key c-red" data-btn="RED" aria-label="Kırmızı"></button>
+        <button class="key c-green" data-btn="GREEN" aria-label="Yeşil"></button>
+        <button class="key c-yellow" data-btn="YELLOW" aria-label="Sarı"></button>
+        <button class="key c-blue" data-btn="BLUE" aria-label="Mavi"></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FARE -->
+  <section class="tab" id="tab-mouse">
+    <div class="col">
+      <div id="pad"><div class="hint">Parmağını kaydır: imleç hareket eder<br>Dokun: tıkla<br>İki parmakla kaydır: sayfa kayar<br>İki parmakla dokun: geri</div></div>
+      <div class="slider">
+        <span>Hız</span><input type="range" id="sens" min="0.6" max="3" step="0.1"><span id="sensVal"></span>
+      </div>
+      <div class="row">
+        <button class="key" data-btn="BACK"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>Geri</button>
+        <button class="key" data-btn="HOME"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></svg>Ana sayfa</button>
+        <button class="key" data-btn="ENTER">Tamam</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- KLAVYE -->
+  <section class="tab" id="tab-keys">
+    <div class="col">
+      <form id="kform" class="wide" autocomplete="off">
+        <input id="kin" class="field" type="text" placeholder="TV'ye yazmak için dokun" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+      </form>
+      <p class="note">TV'de bir yazı kutusu açıkken çalışır (ör. YouTube'da arama).</p>
+      <div class="row">
+        <button class="key keep-focus" data-act="del"><svg viewBox="0 0 24 24"><path d="M9 5h11a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H9l-6-7z"/><path d="m12 9 6 6M18 9l-6 6"/></svg>Sil</button>
+        <button class="key keep-focus" data-act="clear">Temizle</button>
+        <button class="key keep-focus primary" data-act="enter"><svg viewBox="0 0 24 24"><path d="M20 5v7a3 3 0 0 1-3 3H5"/><path d="m9 11-4 4 4 4"/></svg>Ara</button>
+      </div>
+      <div class="row">
+        <button class="key keep-focus" data-btn="LEFT" data-repeat aria-label="Sol"><svg viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></svg></button>
+        <button class="key keep-focus" data-btn="UP" data-repeat aria-label="Yukarı"><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg></button>
+        <button class="key keep-focus" data-btn="DOWN" data-repeat aria-label="Aşağı"><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg></button>
+        <button class="key keep-focus" data-btn="RIGHT" data-repeat aria-label="Sağ"><svg viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></svg></button>
+        <button class="key keep-focus" data-btn="ENTER">OK</button>
+        <button class="key keep-focus" data-btn="BACK" aria-label="Geri"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- RAKAMLAR -->
+  <section class="tab" id="tab-num">
+    <div class="col">
+      <div class="numpad">
+        <button class="key" data-btn="1">1</button><button class="key" data-btn="2">2</button><button class="key" data-btn="3">3</button>
+        <button class="key" data-btn="4">4</button><button class="key" data-btn="5">5</button><button class="key" data-btn="6">6</button>
+        <button class="key" data-btn="7">7</button><button class="key" data-btn="8">8</button><button class="key" data-btn="9">9</button>
+        <button class="key" data-btn="DASH">–</button><button class="key" data-btn="0">0</button><button class="key ok" data-btn="ENTER">Tamam</button>
+      </div>
+      <div class="row">
+        <button class="key" data-btn="CHANNELUP" data-repeat><svg viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></svg>Kanal</button>
+        <button class="key" data-btn="CHANNELDOWN" data-repeat><svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>Kanal</button>
+      </div>
+      <div class="row">
+        <button class="key" data-btn="LIST"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h0M4 12h0M4 18h0"/></svg>Liste</button>
+        <button class="key" data-btn="GUIDE"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Rehber</button>
+        <button class="key" data-btn="INFO"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h0"/></svg>Bilgi</button>
+      </div>
+      <div class="row">
+        <button class="key" data-btn="BACK"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>Geri</button>
+        <button class="key" data-btn="MUTE"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9z"/><path d="m16 9 5 6M21 9l-5 6"/></svg>Sessiz</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- UYGULAMALAR -->
+  <section class="tab" id="tab-apps">
+    <div class="col">
+      <h3>Kaynaklar</h3>
+      <div class="chips" id="inputs"><span class="note">Bağlanınca yüklenecek</span></div>
+      <h3>Uygulamalar</h3>
+      <div class="apps" id="apps"></div>
+      <button class="key wide" data-act="reloadApps">Listeyi yenile</button>
+    </div>
+  </section>
+</main>
+
+<nav id="tabs">
+  <button data-tab="remote"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="3"/><circle cx="12" cy="8" r="2"/><path d="M10 14h0M14 14h0M10 17.5h0M14 17.5h0"/></svg>Kumanda</button>
+  <button data-tab="mouse"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 7v4"/></svg>Fare</button>
+  <button data-tab="keys"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h0M10 10h0M14 10h0M18 10h0M7 14h10"/></svg>Klavye</button>
+  <button data-tab="num"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/></svg>Rakamlar</button>
+  <button data-tab="apps"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Uygulamalar</button>
+</nav>
+
+<dialog id="settings">
+  <h2>Ayarlar</h2>
+  <label for="setIp">TV'nin ağ adresi (IP)</label>
+  <input id="setIp" class="field" inputmode="decimal" autocomplete="off">
+  <label for="setMac">TV'nin MAC adresi (yalnız bilgisayardan yayında açma sinyali için)</label>
+  <input id="setMac" class="field" autocomplete="off" autocapitalize="off" placeholder="aa:bb:cc:dd:ee:ff">
+  <p class="note" id="setInfo" style="margin-top:12px"></p>
+  <p class="note"><a id="certLink" target="_blank" rel="noopener" style="color:var(--ac)" hidden>TV'nin güvenlik sertifikasını onayla</a></p>
+  <div class="row">
+    <button class="key danger" id="btnUnpair">Eşleşmeyi sıfırla</button>
+    <button class="key primary" id="btnSave">Kaydet</button>
+  </div>
+</dialog>
+
+<script>
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const LS = { ip: "tvk.ip", key: "tvk.key", sens: "tvk.sens", mac: "tvk.mac", tab: "tvk.tab" };
+const DEFAULT_IP = "192.168.1.111";
+const DEFAULT_MAC = "";
+const SCROLL_SIGN = -1; // parmak yukarı → sayfa aşağı (iPhone gibi)
+const PERMS = ["APP_TO_APP","CLOSE","CONTROL_AUDIO","CONTROL_DISPLAY","CONTROL_INPUT_JOYSTICK",
+  "CONTROL_INPUT_MEDIA_PLAYBACK","CONTROL_INPUT_MEDIA_RECORDING","CONTROL_INPUT_TEXT","CONTROL_INPUT_TV",
+  "CONTROL_MOUSE_AND_KEYBOARD","CONTROL_POWER","CONTROL_TV_SCREEN","LAUNCH","LAUNCH_WEBAPP",
+  "READ_APP_STATUS","READ_COUNTRY_INFO","READ_CURRENT_CHANNEL","READ_INPUT_DEVICE_LIST",
+  "READ_INSTALLED_APPS","READ_LGE_SDX","READ_LGE_TV_INPUT_EVENTS","READ_NETWORK_STATE",
+  "READ_NOTIFICATIONS","READ_POWER_STATE","READ_RUNNING_APPS","READ_SETTINGS","READ_TV_CHANNEL_LIST",
+  "READ_TV_CURRENT_TIME","READ_UPDATE_INFO","SEARCH","TEST_OPEN","TEST_PROTECTED","TEST_SECURE",
+  "UPDATE_FROM_REMOTE_APP","WRITE_NOTIFICATION_ALERT","WRITE_NOTIFICATION_TOAST","WRITE_SETTINGS"];
+
+/* Bu sayfa korumalı çerçevede çalışır (TV yalnız "null" kaynağı kabul ediyor);
+   ayarlar dış sayfadaki localStorage'da durur, postMessage ile taşınır. */
+let storeReady = false;
+const store = (() => {
+  let data = {};
+  const ready = new Promise((res) => {
+    addEventListener("message", function h(e) {
+      if (e.source === parent && e.data && e.data.tvkInit) {
+        data = e.data.tvkInit; storeReady = true;
+        removeEventListener("message", h); res();
+      }
+    });
+  });
+  parent.postMessage({ tvkHello: true }, "*");
+  return {
+    ready,
+    get: (k) => (k in data ? data[k] : null),
+    set: (k, v) => { data[k] = String(v); parent.postMessage({ tvkSet: [k, String(v)] }, "*"); },
+    remove: (k) => { delete data[k]; parent.postMessage({ tvkRemove: k }, "*"); },
+  };
+})();
+
+function wolRequest(mac) {
+  return new Promise((res) => {
+    const id = "w" + Date.now();
+    const h = (e) => {
+      if (e.source === parent && e.data && e.data.tvkWolResult && e.data.id === id) { removeEventListener("message", h); res(e.data.ok); }
+    };
+    addEventListener("message", h);
+    parent.postMessage({ tvkWol: mac, id }, "*");
+    setTimeout(() => { removeEventListener("message", h); res(false); }, 4000);
+  });
+}
+
+const tvIp = () => store.get(LS.ip) || DEFAULT_IP;
+const secure = location.protocol === "https:";
+
+/* ---------- durum ve bildirim ---------- */
+function setStatus(state, text) {
+  $("#dot").className = state;
+  $("#statusText").textContent = text;
+}
+let bannerTimer = null;
+function banner(text, opts = {}) {
+  clearTimeout(bannerTimer);
+  $("#bannerText").textContent = text;
+  const b = $("#bannerBtn");
+  b.hidden = !opts.action;
+  if (opts.action) { b.textContent = opts.action; b.onclick = () => { hideBanner(); opts.onAction(); }; }
+  $("#banner").hidden = false;
+  if (!opts.sticky) bannerTimer = setTimeout(hideBanner, opts.ms || 3000);
+}
+function hideBanner() { $("#banner").hidden = true; }
+const showErr = (e) => banner(e && e.message ? e.message : "Komut gönderilemedi");
+
+/* iOS 18+ Safari'de dokunma titreşimi */
+function haptic() {
+  try {
+    const l = document.createElement("label");
+    l.ariaHidden = "true"; l.style.display = "none";
+    const i = document.createElement("input");
+    i.type = "checkbox"; i.setAttribute("switch", "");
+    l.appendChild(i); document.head.appendChild(l); l.click(); l.remove();
+  } catch (_) {}
+}
+
+/* ---------- TV bağlantısı ---------- */
+let ws = null, registered = false, stopRetry = false;
+let retryTimer = null, retryDelay = 1000, reqId = 0;
+const pending = new Map();
+
+function connect() {
+  clearTimeout(retryTimer);
+  if (ws && ws.readyState <= 1) return;
+  registered = false;
+  const url = secure ? `wss://${tvIp()}:3001` : `ws://${tvIp()}:3000`;
+  setStatus("wait", "Bağlanıyor…");
+  let sock;
+  try { sock = new WebSocket(url); } catch (e) { setStatus("", "Bağlantı yok"); return; }
+  ws = sock;
+  let opened = false;
+  sock.onopen = () => {
+    opened = true;
+    const payload = { forcePairing: false, pairingType: "PROMPT",
+      manifest: { manifestVersion: 1, appVersion: "1.1", permissions: PERMS } };
+    const key = store.get(LS.key);
+    if (key) payload["client-key"] = key;
+    sock.send(JSON.stringify({ id: "register_0", type: "register", payload }));
+  };
+  sock.onmessage = (ev) => { if (ws === sock) onMessage(ev); };
+  sock.onclose = () => {
+    if (ws !== sock) return;
+    ws = null; registered = false;
+    closePointer();
+    for (const [id, p] of pending) { clearTimeout(p.t); p.reject(new Error("Bağlantı koptu")); pending.delete(id); }
+    setStatus("", "Bağlantı yok · TV kapalı olabilir");
+    // https'te TV'nin kendi imzalı sertifikası bir kez elle onaylanmalı
+    if (secure && !opened) {
+      banner("TV'ye ulaşılamadı. TV açıksa, TV'nin güvenlik sertifikasını bir kez onaylaman gerekiyor.",
+        { sticky: true, action: "Sertifikayı onayla", onAction: openCert });
+    }
+    scheduleRetry();
+  };
+}
+
+const certUrl = () => `https://${tvIp()}:3001/`;
+function openCert() { window.open(certUrl(), "_blank"); }
+
+function scheduleRetry() {
+  if (stopRetry || document.visibilityState !== "visible") return;
+  clearTimeout(retryTimer);
+  retryTimer = setTimeout(connect, retryDelay);
+  retryDelay = Math.min(retryDelay * 2, 10000);
+}
+
+function onMessage(ev) {
+  let m;
+  try { m = JSON.parse(ev.data); } catch (_) { return; }
+  if (m.id === "register_0") {
+    if (m.type === "response" && m.payload && m.payload.pairingType === "PROMPT") {
+      setStatus("wait", "TV'de onay bekleniyor");
+      banner("TV ekranındaki bağlantı isteğini kumandayla onayla.", { sticky: true });
+    } else if (m.type === "registered") {
+      store.set(LS.key, m.payload["client-key"]);
+      registered = true; retryDelay = 1000;
+      setStatus("on", `Bağlı · ${tvIp()}`);
+      hideBanner();
+      onRegistered();
+    } else if (m.type === "error") {
+      stopRetry = true;
+      setStatus("", "Bağlantı reddedildi");
+      banner("TV bağlantıyı reddetti.", { sticky: true, action: "Tekrar dene", onAction: () => { stopRetry = false; ws && ws.close(); ws = null; connect(); } });
+    }
+    return;
+  }
+  if (m.id === "vol" && m.payload) {
+    const p = m.payload, s = p.volumeStatus || p;
+    const v = s.volume, muted = s.muteStatus ?? s.muted;
+    if (v !== undefined) $("#vol").textContent = muted ? "· sessiz" : `· ${v}`;
+    return;
+  }
+  const p = pending.get(m.id);
+  if (!p) return;
+  pending.delete(m.id); clearTimeout(p.t);
+  if (m.type === "error") p.reject(new Error(m.error || "TV komutu reddetti"));
+  else p.resolve(m.payload || {});
+}
+
+function req(uri, payload = {}, timeout = 8000) {
+  return new Promise((resolve, reject) => {
+    if (!ws || !registered) return reject(new Error("TV'ye bağlı değil"));
+    const id = "r" + (++reqId);
+    const t = setTimeout(() => { pending.delete(id); reject(new Error("TV yanıt vermedi")); }, timeout);
+    pending.set(id, { resolve, reject, t });
+    ws.send(JSON.stringify({ id, type: "request", uri: "ssap://" + uri, payload }));
+  });
+}
+
+function onRegistered() {
+  ws.send(JSON.stringify({ id: "vol", type: "subscribe", uri: "ssap://audio/getVolume", payload: {} }));
+  openPointer().catch(() => {});
+  if (currentTab === "apps" || !appsLoaded) loadApps();
+  req("system/getSystemInfo").then((i) => { if (i.modelName) setStatus("on", `Bağlı · LG ${i.modelName}`); }).catch(() => {});
+}
+
+/* ---------- fare / tuş soketi ---------- */
+let pws = null, pointerPromise = null;
+function openPointer() {
+  if (pws && pws.readyState === 1) return Promise.resolve(pws);
+  if (pointerPromise) return pointerPromise;
+  pointerPromise = req("com.webos.service.networkinput/getPointerInputSocket")
+    .then((p) => new Promise((res, rej) => {
+      let path = p.socketPath;
+      if (secure) path = path.replace(/^ws:\/\/([^/:]+):3000/, "wss://$1:3001");
+      const s = new WebSocket(path);
+      s.onopen = () => { pws = s; res(s); };
+      s.onerror = () => rej(new Error("Tuş bağlantısı kurulamadı"));
+      s.onclose = () => { if (pws === s) pws = null; };
+    }))
+    .finally(() => { pointerPromise = null; });
+  return pointerPromise;
+}
+function closePointer() { if (pws) { try { pws.close(); } catch (_) {} pws = null; } }
+function sendPointer(msg) {
+  if (pws && pws.readyState === 1) { pws.send(msg); return; }
+  openPointer().then((s) => s.send(msg)).catch(showErr);
+}
+const pressButton = (name) => sendPointer(`type:button\nname:${name}\n\n`);
+
+/* ---------- düğmeler ---------- */
+let holdTimer = null, heldEl = null;
+function press(el) {
+  if (el.dataset.btn) pressButton(el.dataset.btn);
+  else if (el.dataset.act) action(el.dataset.act);
+}
+document.addEventListener("pointerdown", (e) => {
+  const el = e.target.closest("[data-btn],[data-act]");
+  if (!el) return;
+  heldEl = el; el.classList.add("pressed"); haptic();
+  press(el);
+  if (el.hasAttribute("data-repeat")) {
+    holdTimer = setTimeout(function rep() { press(el); holdTimer = setTimeout(rep, 130); }, 450);
+  }
+});
+function release() { clearTimeout(holdTimer); if (heldEl) heldEl.classList.remove("pressed"); heldEl = null; }
+document.addEventListener("pointerup", release);
+document.addEventListener("pointercancel", release);
+/* klavye sekmesindeki tuşlar iPhone klavyesini kapatmasın */
+document.addEventListener("touchstart", (e) => { if (e.target.closest(".keep-focus")) e.preventDefault(); }, { passive: false });
+
+let powerArmed = 0;
+function action(name) {
+  switch (name) {
+    case "power": return power();
+    case "del": return kDelete();
+    case "clear": return kClear();
+    case "enter": return kEnter();
+    case "reloadApps": return loadApps();
+  }
+}
+
+function power() {
+  if (!registered) return wake();
+  const now = Date.now();
+  if (now - powerArmed < 2500) {
+    powerArmed = 0;
+    req("system/turnOff").then(() => banner("TV kapatılıyor")).catch(showErr);
+  } else {
+    powerArmed = now;
+    banner("Kapatmak için güç tuşuna tekrar dokun", { ms: 2500 });
+  }
+}
+
+async function wake() {
+  const mac = store.get(LS.mac) || DEFAULT_MAC;
+  if (await wolRequest(mac)) {
+    banner("Açma sinyali gönderildi, TV açılıyor…", { ms: 5000 });
+    stopRetry = false; retryDelay = 3000; scheduleRetry();
+  } else {
+    banner("TV kapalı görünüyor. Açmak için TV'nin kendi kumandasını kullan.", { ms: 5000 });
+  }
+}
+
+/* ---------- fare alanı ---------- */
+const pad = $("#pad");
+let sens = 1.5;
+$("#sens").addEventListener("input", (e) => {
+  sens = parseFloat(e.target.value); $("#sensVal").textContent = sens.toFixed(1);
+  store.set(LS.sens, sens);
+});
+let lastX = 0, lastY = 0, startT = 0, moved = 0, two = false, twoMoved = 0;
+let accX = 0, accY = 0, scrollAcc = 0, raf = 0;
+const avg = (ts, k) => (ts[0][k] + ts[1][k]) / 2;
+
+pad.addEventListener("touchstart", (e) => {
+  e.preventDefault();
+  pad.classList.add("touch");
+  if (!pws) openPointer().catch(() => {});
+  if (e.touches.length === 1) {
+    lastX = e.touches[0].clientX; lastY = e.touches[0].clientY;
+    startT = performance.now(); moved = 0; two = false;
+  } else if (e.touches.length === 2) {
+    two = true; twoMoved = 0;
+    lastY = avg(e.touches, "clientY");
+  }
+}, { passive: false });
+
+pad.addEventListener("touchmove", (e) => {
+  e.preventDefault();
+  if (two && e.touches.length >= 2) {
+    const y = avg(e.touches, "clientY");
+    scrollAcc += y - lastY; twoMoved += Math.abs(y - lastY); lastY = y;
+  } else if (!two && e.touches.length === 1) {
+    const t = e.touches[0];
+    const dx = t.clientX - lastX, dy = t.clientY - lastY;
+    lastX = t.clientX; lastY = t.clientY;
+    moved += Math.abs(dx) + Math.abs(dy);
+    const k = sens * (1 + Math.min(Math.hypot(dx, dy), 30) / 12);
+    accX += dx * k; accY += dy * k;
+  }
+  if (!raf) raf = requestAnimationFrame(flushPad);
+}, { passive: false });
+
+pad.addEventListener("touchend", (e) => {
+  e.preventDefault();
+  const quick = performance.now() - startT < 300;
+  if (e.touches.length === 0) {
+    pad.classList.remove("touch");
+    if (two) { if (twoMoved < 12 && quick) { pressButton("BACK"); haptic(); } }
+    else if (moved < 10 && quick) { sendPointer("type:click\n\n"); haptic(); }
+    two = false;
+  } else if (e.touches.length === 1 && two) {
+    lastY = e.touches[0].clientY;
+  }
+}, { passive: false });
+pad.addEventListener("touchcancel", () => { pad.classList.remove("touch"); two = false; });
+
+function flushPad() {
+  raf = 0;
+  if (!pws || pws.readyState !== 1) { accX = accY = scrollAcc = 0; return; }
+  const dx = Math.trunc(accX), dy = Math.trunc(accY);
+  if (dx || dy) { pws.send(`type:move\ndx:${dx}\ndy:${dy}\ndown:0\n\n`); accX -= dx; accY -= dy; }
+  const STEP = 22;
+  if (Math.abs(scrollAcc) >= STEP) {
+    const ticks = Math.trunc(scrollAcc / STEP);
+    pws.send(`type:scroll\ndx:0\ndy:${SCROLL_SIGN * ticks}\n\n`);
+    scrollAcc -= ticks * STEP;
+  }
+}
+
+/* ---------- klavye ---------- */
+const kin = $("#kin");
+let kPrev = "";
+kin.addEventListener("input", () => {
+  const cur = kin.value;
+  let p = 0;
+  const n = Math.min(kPrev.length, cur.length);
+  while (p < n && kPrev[p] === cur[p]) p++;
+  const del = kPrev.length - p, ins = cur.slice(p);
+  kPrev = cur;
+  if (del) req("com.webos.service.ime/deleteCharacters", { count: del }).catch(showErr);
+  if (ins) req("com.webos.service.ime/insertText", { text: ins, replace: 0 }).catch(showErr);
+});
+$("#kform").addEventListener("submit", (e) => { e.preventDefault(); kEnter(); });
+function kEnter() { req("com.webos.service.ime/sendEnterKey").catch(showErr); }
+function kDelete() {
+  req("com.webos.service.ime/deleteCharacters", { count: 1 }).catch(showErr);
+  kin.value = kin.value.slice(0, -1); kPrev = kin.value;
+}
+function kClear() {
+  req("com.webos.service.ime/deleteCharacters", { count: Math.max(kPrev.length, 40) }).catch(showErr);
+  kin.value = ""; kPrev = "";
+}
+
+/* ---------- uygulamalar ve kaynaklar ---------- */
+let appsLoaded = false;
+async function loadApps() {
+  if (!registered) return;
+  appsLoaded = true;
+  const grid = $("#apps"), chips = $("#inputs");
+  try {
+    const r = await req("tv/getExternalInputList");
+    chips.innerHTML = "";
+    const live = document.createElement("button");
+    live.className = "chip"; live.textContent = "Canlı TV";
+    live.onclick = () => req("system.launcher/launch", { id: "com.webos.app.livetv" }).catch(showErr);
+    chips.appendChild(live);
+    for (const d of r.devices || []) {
+      const b = document.createElement("button");
+      b.className = "chip" + (d.connected === false ? " dim" : "");
+      b.textContent = d.label || d.id;
+      b.onclick = () => req("tv/switchInput", { inputId: d.id }).catch(showErr);
+      chips.appendChild(b);
+    }
+  } catch (e) { chips.innerHTML = '<span class="note">Kaynaklar alınamadı</span>'; }
+  try {
+    const r = await req("com.webos.applicationManager/listLaunchPoints");
+    grid.innerHTML = "";
+    for (const a of r.launchPoints || []) {
+      if (!a.title) continue;
+      const b = document.createElement("button");
+      b.className = "app";
+      let src = a.largeIcon || a.icon;
+      if (src && secure) src = src.replace(/^http:\/\/([^/:]+):3000/, "https://$1:3001");
+      if (src) {
+        const img = document.createElement("img");
+        img.src = src; img.alt = ""; img.loading = "lazy";
+        if (a.bgColor) img.style.background = a.bgColor;
+        img.onerror = () => img.replaceWith(Object.assign(document.createElement("div"), { className: "ph" }));
+        b.appendChild(img);
+      } else {
+        b.appendChild(Object.assign(document.createElement("div"), { className: "ph" }));
+      }
+      const t = document.createElement("span"); t.textContent = a.title; b.appendChild(t);
+      b.onclick = () => { haptic(); req("system.launcher/launch", { id: a.id }).then(() => banner(`${a.title} açılıyor`)).catch(showErr); };
+      grid.appendChild(b);
+    }
+  } catch (e) { grid.innerHTML = '<p class="note">Uygulamalar alınamadı</p>'; }
+}
+
+/* ---------- sekmeler ---------- */
+let currentTab = "remote";
+function showTab(name, focus) {
+  currentTab = name;
+  store.set(LS.tab, name);
+  document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t.id === "tab-" + name));
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+  if (name === "keys" && focus) kin.focus();
+  if (name === "apps" && registered && !appsLoaded) loadApps();
+  if (name === "mouse" && registered) openPointer().catch(() => {});
+}
+$("#tabs").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-tab]");
+  if (b) showTab(b.dataset.tab, true);
+});
+
+/* ---------- ayarlar ---------- */
+const dlg = $("#settings");
+$("#btnSettings").onclick = () => {
+  $("#setIp").value = tvIp();
+  $("#setMac").value = store.get(LS.mac) || DEFAULT_MAC;
+  $("#setInfo").textContent = (store.get(LS.key) ? "Bu telefon TV ile eşleşmiş." : "Henüz eşleşme yok.") +
+    (secure ? " Şifreli bağlantı (3001)." : " Şifresiz bağlantı (3000).");
+  const cl = $("#certLink");
+  cl.hidden = !secure; cl.href = certUrl();
+  dlg.showModal();
+};
+dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+function reconnect() { stopRetry = false; retryDelay = 1000; if (ws) { const s = ws; ws = null; s.close(); } closePointer(); registered = false; connect(); }
+$("#btnSave").onclick = () => {
+  const ip = $("#setIp").value.trim(), mac = $("#setMac").value.trim();
+  if (ip) store.set(LS.ip, ip);
+  if (mac) store.set(LS.mac, mac);
+  dlg.close(); appsLoaded = false; reconnect();
+};
+$("#btnUnpair").onclick = () => { store.remove(LS.key); dlg.close(); reconnect(); };
+
+/* ---------- uygulama ön plana gelince ---------- */
+async function healthCheck() {
+  if (!storeReady || document.visibilityState !== "visible") return;
+  stopRetry = false;
+  if (!ws) { retryDelay = 1000; connect(); return; }
+  if (!registered) return;
+  try { await req("audio/getVolume", {}, 2500); }
+  catch (_) { reconnect(); }
+}
+document.addEventListener("visibilitychange", healthCheck);
+window.addEventListener("pageshow", (e) => { if (e.persisted) healthCheck(); });
+
+store.ready.then(() => {
+  sens = parseFloat(store.get(LS.sens)) || 1.5;
+  $("#sens").value = sens; $("#sensVal").textContent = sens.toFixed(1);
+  showTab(store.get(LS.tab) || "remote", false);
+  connect();
+});
+</script>
+</body>
+</html>

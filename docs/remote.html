@@ -379,6 +379,7 @@ dialog .key { min-height: 46px; font-size: 15px; }
     </ul>
   </details>
   <div class="row"><button class="key" id="infoClose">Kapat</button></div>
+  <p class="note" id="infoVer" style="margin-top:12px"></p>
 </dialog>
 
 <script>
@@ -831,6 +832,7 @@ function openInfo() {
   info.showModal();
 }
 $("#btnInfo").onclick = openInfo;
+$("#infoVer").textContent = "Sürüm " + (new URLSearchParams(location.search).get("v") || "?");
 $("#infoClose").onclick = () => info.close();
 info.addEventListener("click", (e) => { if (e.target === info) info.close(); });
 $("#infoSave").onclick = () => {

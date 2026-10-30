@@ -132,7 +132,8 @@ h3 { margin: 6px 0 0; font-size: 13px; color: var(--mu); font-weight: 600; width
   display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.45);
 }
 #banner[hidden] { display: none; }
-#banner span { flex: 1; }
+#banner { flex-wrap: wrap; }
+#banner span { flex: 1 1 220px; }
 #banner button { background: var(--ac); border: 0; color: #fff; border-radius: 10px; padding: 8px 12px; font-size: 13px; white-space: nowrap; }
 
 dialog {
@@ -145,6 +146,19 @@ dialog label { display: block; color: var(--mu); font-size: 13px; margin: 12px 0
 dialog .row { margin-top: 16px; }
 dialog .key { min-height: 46px; font-size: 15px; }
 .primary { background: var(--ac) !important; color: #fff; }
+.head-btns { display: flex; gap: 8px; }
+#banner button.secondary { background: var(--s2); }
+#info { max-height: 86vh; overflow-y: auto; }
+#info details { border-top: 1px solid var(--s3); }
+#info summary { padding: 13px 0; font-weight: 600; font-size: 15px; cursor: pointer; }
+#info ol, #info ul { margin: 0 0 12px; padding-left: 20px; font-size: 14px; line-height: 1.5; }
+#info li { margin: 6px 0; }
+#info li[hidden] { display: none; }
+#info p.note { text-align: left; margin: 0 0 12px; }
+#info a { color: var(--ac); }
+.inline { display: flex; gap: 8px; margin-top: 8px; }
+.inline .field { flex: 1; min-width: 0; padding: 10px 12px; font-size: 16px; }
+.inline .key { min-height: 0; padding: 0 16px; }
 </style>
 </head>
 <body>
@@ -154,12 +168,17 @@ dialog .key { min-height: 46px; font-size: 15px; }
     <span id="dot" class="wait"></span>
     <div><b>TV Kumanda</b><small id="statusText">Bağlanıyor…</small></div>
   </div>
-  <button class="icon-btn" id="btnSettings" aria-label="Ayarlar">
-    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
-  </button>
+  <div class="head-btns">
+    <button class="icon-btn" id="btnInfo" aria-label="Bilgi">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h0"/></svg>
+    </button>
+    <button class="icon-btn" id="btnSettings" aria-label="Ayarlar">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>
+    </button>
+  </div>
 </header>
 
-<div id="banner" hidden><span id="bannerText"></span><button id="bannerBtn" hidden></button></div>
+<div id="banner" hidden><span id="bannerText"></span><button id="bannerBtn2" class="secondary" hidden></button><button id="bannerBtn" hidden></button></div>
 
 <main>
   <!-- KUMANDA -->
@@ -311,6 +330,57 @@ dialog .key { min-height: 46px; font-size: 15px; }
   </div>
 </dialog>
 
+<dialog id="info">
+  <h2>Bilgi</h2>
+  <details open>
+    <summary>Bağlanmıyorsa</summary>
+    <ol>
+      <li>TV açık mı, telefon evdeki Wi-Fi'ye bağlı mı? Önce bunu kontrol et.</li>
+      <li>TV'nin adresi değişmiş olabilir (elektrik kesintisinden ya da modem yeniden başladıktan sonra olur). TV'de <b>Ayarlar → Tüm Ayarlar → Ağ → Kablolu Bağlantı (Ethernet)</b> içinde IP adresine bak. TV Wi-Fi ile bağlıysa <b>Wi-Fi Bağlantısı</b>'na bak.</li>
+      <li>Yeni adresi buraya yaz ve kaydet:
+        <div class="inline"><input id="infoIp" class="field" inputmode="decimal" autocomplete="off"><button class="key primary" id="infoSave">Kaydet</button></div>
+      </li>
+      <li class="only-secure">Sonra <a class="certA" target="_blank" rel="noopener">Sertifikayı onayla</a>'ya dokun. Açılan uyarıda <b>Ayrıntıları Göster → bu web sitesini ziyaret et</b> de, o sekmeyi kapatıp buraya dön.</li>
+    </ol>
+    <p class="note">TV'deki eşleşme adres değişince bozulmaz, TV yeniden onay istemez.</p>
+  </details>
+  <details>
+    <summary>İlk kurulum (yeni telefon)</summary>
+    <ol>
+      <li>Telefon TV ile aynı ev ağında olsun. TV'de <b>Ayarlar → Ağ → LG Connect Apps</b> açık olsun.</li>
+      <li>TV'nin adresini yukarıdaki kutuya yaz.</li>
+      <li class="only-secure"><a class="certA" target="_blank" rel="noopener">Sertifikayı onayla</a> (bir kez).</li>
+      <li>TV ekranında çıkan bağlantı isteğini TV kumandasıyla onayla.</li>
+      <li>Safari'de Paylaş → <b>Ana Ekrana Ekle</b>. Ana ekrandan ilk açılışta sertifika onayı ve TV onayı bir kez daha istenebilir.</li>
+    </ol>
+  </details>
+  <details>
+    <summary>Fare</summary>
+    <ul>
+      <li>Parmağını kaydır: imleç hareket eder.</li>
+      <li>Tek dokunuş: tıklar.</li>
+      <li>İki parmakla kaydır: sayfa kayar.</li>
+      <li>İki parmakla dokun: geri.</li>
+      <li>İmleç hızını Fare sekmesindeki çubuktan ayarla.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Klavye</summary>
+    <ul>
+      <li>Yazı, TV'de açık olan yazı kutusuna gider. TV'nin kendi ekran klavyesini kullanan yerlerde çalışır: web tarayıcısı, YouTube vb.</li>
+      <li>Netflix, HBO Max gibi uygulamalar kendi klavyelerini kullandığı için dışarıdan yazı almaz. Bunlarda aramayı platformun telefon uygulamasından yapıp TV'ye gönder: Netflix ve YouTube'da yansıtma simgesi, diğerlerinde AirPlay.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>Güç</summary>
+    <ul>
+      <li>TV'yi kapatmak için güç tuşuna iki kez dokun (kazara kapanmasın diye).</li>
+      <li>TV kapalıyken bu uygulama TV'yi açamaz; açmak için TV'nin kendi kumandasını kullan.</li>
+    </ul>
+  </details>
+  <div class="row"><button class="key" id="infoClose">Kapat</button></div>
+</dialog>
+
 <script>
 "use strict";
 const $ = (s, r = document) => r.querySelector(s);
@@ -376,6 +446,9 @@ function banner(text, opts = {}) {
   const b = $("#bannerBtn");
   b.hidden = !opts.action;
   if (opts.action) { b.textContent = opts.action; b.onclick = () => { hideBanner(); opts.onAction(); }; }
+  const b2 = $("#bannerBtn2");
+  b2.hidden = !opts.action2;
+  if (opts.action2) { b2.textContent = opts.action2; b2.onclick = () => { hideBanner(); opts.onAction2(); }; }
   $("#banner").hidden = false;
   if (!opts.sticky) bannerTimer = setTimeout(hideBanner, opts.ms || 3000);
 }
@@ -408,8 +481,10 @@ function connect() {
   try { sock = new WebSocket(url); } catch (e) { setStatus("", "Bağlantı yok"); return; }
   ws = sock;
   let opened = false;
+  // TV kapalıyken tarayıcı uzun süre bekler; 5 sn'de açılmazsa vazgeç
+  const openTimer = setTimeout(() => { if (!opened) sock.close(); }, 5000);
   sock.onopen = () => {
-    opened = true;
+    opened = true; clearTimeout(openTimer);
     const payload = { forcePairing: false, pairingType: "PROMPT",
       manifest: { manifestVersion: 1, appVersion: "1.1", permissions: PERMS } };
     const key = store.get(LS.key);
@@ -424,9 +499,12 @@ function connect() {
     for (const [id, p] of pending) { clearTimeout(p.t); p.reject(new Error("Bağlantı koptu")); pending.delete(id); }
     setStatus("", "Bağlantı yok · TV kapalı olabilir");
     // https'te TV'nin kendi imzalı sertifikası bir kez elle onaylanmalı
-    if (secure && !opened) {
-      banner("TV'ye ulaşılamadı. TV açıksa, TV'nin güvenlik sertifikasını bir kez onaylaman gerekiyor.",
-        { sticky: true, action: "Sertifikayı onayla", onAction: openCert });
+    if (!opened && secure) {
+      banner("TV'ye ulaşılamadı. TV açıksa, güvenlik sertifikasını onaylaman ya da TV'nin yeni adresini girmen gerekebilir.",
+        { sticky: true, action: "Sertifikayı onayla", onAction: openCert, action2: "Bilgi", onAction2: openInfo });
+    } else if (!opened) {
+      banner("TV'ye ulaşılamadı. TV kapalı olabilir ya da adresi değişmiş olabilir.",
+        { sticky: true, action: "Bilgi", onAction: openInfo });
     }
     scheduleRetry();
   };
@@ -743,6 +821,25 @@ $("#btnSave").onclick = () => {
   dlg.close(); appsLoaded = false; reconnect();
 };
 $("#btnUnpair").onclick = () => { store.remove(LS.key); dlg.close(); reconnect(); };
+
+/* ---------- bilgi ---------- */
+const info = $("#info");
+function openInfo() {
+  $("#infoIp").value = tvIp();
+  document.querySelectorAll("#info .certA").forEach((a) => { a.href = certUrl(); });
+  document.querySelectorAll("#info .only-secure").forEach((el) => { el.hidden = !secure; });
+  info.showModal();
+}
+$("#btnInfo").onclick = openInfo;
+$("#infoClose").onclick = () => info.close();
+info.addEventListener("click", (e) => { if (e.target === info) info.close(); });
+$("#infoSave").onclick = () => {
+  const ip = $("#infoIp").value.trim();
+  if (!ip) return;
+  store.set(LS.ip, ip);
+  document.querySelectorAll("#info .certA").forEach((a) => { a.href = certUrl(); });
+  appsLoaded = false; reconnect();
+};
 
 /* ---------- uygulama ön plana gelince ---------- */
 async function healthCheck() {

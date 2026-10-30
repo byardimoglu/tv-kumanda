@@ -127,7 +127,7 @@ h3 { margin: 6px 0 0; font-size: 13px; color: var(--mu); font-weight: 600; width
 .danger { color: var(--red); }
 
 #banner {
-  position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top) + 56px); z-index: 20;
+  position: fixed; left: 12px; right: 12px; bottom: calc(env(safe-area-inset-bottom) + 72px); z-index: 20;
   background: var(--s3); border-radius: 14px; padding: 12px 14px; font-size: 14px;
   display: flex; align-items: center; gap: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.45);
 }
@@ -374,7 +374,7 @@ dialog .key { min-height: 46px; font-size: 15px; }
   <details>
     <summary>Güç</summary>
     <ul>
-      <li>TV'yi kapatmak için güç tuşuna iki kez dokun (kazara kapanmasın diye).</li>
+      <li>Güç tuşu TV'yi tek dokunuşla kapatır.</li>
       <li>TV kapalıyken bu uygulama TV'yi açamaz; açmak için TV'nin kendi kumandasını kullan.</li>
     </ul>
   </details>
@@ -616,7 +616,6 @@ document.addEventListener("pointercancel", release);
 /* klavye sekmesindeki tuşlar iPhone klavyesini kapatmasın */
 document.addEventListener("touchstart", (e) => { if (e.target.closest(".keep-focus")) e.preventDefault(); }, { passive: false });
 
-let powerArmed = 0;
 function action(name) {
   switch (name) {
     case "power": return power();
@@ -629,14 +628,7 @@ function action(name) {
 
 function power() {
   if (!registered) return wake();
-  const now = Date.now();
-  if (now - powerArmed < 2500) {
-    powerArmed = 0;
-    req("system/turnOff").then(() => banner("TV kapatılıyor")).catch(showErr);
-  } else {
-    powerArmed = now;
-    banner("Kapatmak için güç tuşuna tekrar dokun", { ms: 2500 });
-  }
+  req("system/turnOff").then(() => banner("TV kapatılıyor")).catch(showErr);
 }
 
 async function wake() {
